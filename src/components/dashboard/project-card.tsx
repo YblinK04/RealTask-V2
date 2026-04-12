@@ -17,7 +17,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
  
   const tasks = project.tasks || [];
-  const total = project.tasks.length;
+  const total = tasks.length;
  
   const completed = project.tasks.filter(t => t.status === 'DONE').length;
   const inProgress = project.tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'REVIEW').length;

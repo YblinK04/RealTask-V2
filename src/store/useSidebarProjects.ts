@@ -10,7 +10,7 @@ import { Project, Task } from "@prisma/client";
 export type SidebarProject = Omit<Project, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
   updatedAt: string;
-  tasks: Task[];
+  tasks?: Task[];
 };
 
 export function useSidebarProjects(initialProjects: SidebarProject[]) {
