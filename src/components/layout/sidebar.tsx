@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma'; // Добавлен импорт prisma
+import { prisma } from '@/lib/prisma'; 
 import { SidebarClient } from './sidebar-client';
 import { SidebarProject } from '@/store/useSidebarProjects';
 

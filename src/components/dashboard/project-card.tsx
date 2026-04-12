@@ -78,7 +78,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Progress 
               value={progress} 
               className="h-2 bg-muted ring-1 ring-border/20" 
-              style={{ '--progress-foreground': project.color } as any} // Кастомный цвет прогресса
+              style={{ '--progress-foreground': project.color } as any}
             />
           </div>
         </CardContent>

@@ -5,10 +5,10 @@ import { compare } from 'bcryptjs'
 import { LoginSchema } from '@/lib/schemas'
 import "next-auth/jwt"
 
-// 1. Расширение типов
+
 declare module "next-auth" {
   interface User {
-    id?: string // Сделал опциональным для совместимости
+    id?: string 
     role?: 'USER' | 'ADMIN'
   }
   interface Session {
@@ -26,12 +26,10 @@ declare module "next-auth/jwt" {
   }
 }
 
-// 2. Конфигурация
 export const authConfig: NextAuthConfig = {
   providers: [
     Credentials({
       async authorize(credentials) {
-        // Валидация полей через твою схему
         const validatedFields = LoginSchema.safeParse(credentials);
 
         if (validatedFields.success) {
@@ -41,7 +39,6 @@ export const authConfig: NextAuthConfig = {
             where: { email }
           });
 
-          // Проверка пароля
           if (!user || !user.password) return null;
 
           const passwordsMatch = await compare(password, user.password);
@@ -66,7 +63,7 @@ export const authConfig: NextAuthConfig = {
         token.role = user.role as 'USER' | 'ADMIN'
         token.name = user.name
       }
-      // Обработка обновления профиля через update()
+
       if (trigger === "update" && session?.name) {
         token.name = session.name
       }

@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/lib/schemas';
 import { cn, getPriorityColor, formatDate } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Calendar, MessageSquare, MoreVertical, Trash, Edit, Clock } from 'lucide-react';
+import {  MessageSquare, MoreVertical, Trash, Edit, Clock } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 

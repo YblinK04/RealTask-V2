@@ -3,13 +3,10 @@ import { type Task} from '@/lib/schemas';
 
 
 interface DnDState {
-    // Текущая перетаскиваемая задача
     draggedTask: Task | null;
 
-    // колонка над которой перетаскиваемый элемент
     targetColumn: string | null;
 
-    // действия 
 
     setDraggedTask: (task: Task | null) => void;
     setTargetColumn: (column: string | null) => void;

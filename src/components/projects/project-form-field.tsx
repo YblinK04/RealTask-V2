@@ -4,7 +4,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ColorPicker } from '@/components/ui/color-picker';
-import { Control } from 'react-hook-form';
+
 
 export function ProjectFormFields({ control, disabled }: { control: any; disabled: boolean }) {
   return (
