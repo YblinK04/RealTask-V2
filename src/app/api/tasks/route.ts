@@ -1,90 +1,78 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { taskService } from '@/services/task.service';
-import { auth } from '@/lib/auth';
-import { request } from 'http';
-import { nextWednesday } from 'date-fns';
+import { auth } from "@/lib/auth";
+import { taskService } from "@/services/task.service";
+import { CreateTaskSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 
-export async function GET(request: NextRequest) {
-    try {
-        const session = await auth();
+export const POST = auth(async (req) => {
+  const userId = req.auth?.user?.id;
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized'}, {status: 401});
-        }
-
-        const searchParams = request.nextUrl.searchParams; 
-        const projectId = searchParams.get('projectId');
-
-        if (!projectId) {
-            return NextResponse.json({ error: 'Project ID is required'}, {status: 400})
-        }
-
-        const tasks = await taskService.getProjectTasks(projectId, session.user.id);
-
-        return NextResponse.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks', error);
-        return NextResponse.json(
-            {error: 'Internal server error'},
-            {status: 500}
-        )
+  try {
+    const body = await req.json();
+    
+    
+    const validated = CreateTaskSchema.parse(body);
+    
+    
+    const task = await taskService.create(validated, userId);
+    
+    return NextResponse.json(task, { status: 201 });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      console.error("❌ ВАЛИДАЦИЯ ЗАДАЧИ ПРОВАЛЕНА:", error.issues);
+      return NextResponse.json({ 
+        error: "Ошибка валидации данных", 
+        details: error.issues
+      }, { status: 400 });
     }
-};
 
-export async function POST(request: NextRequest) {
-    try {
-        const session = await auth();
+    console.error("❌ ОШИБКА API СОЗДАНИЯ ЗАДАЧИ:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+  }
+});
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized'}, {status: 401});
-            
-        }
-        
-            const body = await request.json();
-            const task = await taskService.create(body, session.user.id);
+export const PATCH = auth(async (req) => {
+  const userId = req.auth?.user?.id;
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-            return NextResponse.json(task, {status: 201});
-    } catch (error: any) {
-        console.error('Error creating task', error);
-
-        if (error.message.includes('Project not found')) {
-            return NextResponse.json({error: error.message}, {status: 404})
-        }
-
-        return NextResponse.json(
-            {error: 'Internal server error'},
-            {status: 500}
-        );
+  try {
+    const body = await req.json();
+    
+    if (body.newStatus) {
+      const movedTask = await taskService.move(body, userId);
+      return NextResponse.json(movedTask);
     }
-}
 
-export async function PATCH(request: NextRequest) {
-    try {
-        const session = await auth();
+   const updatedTask = await taskService.update(body, userId);
+    return NextResponse.json(updatedTask);
+  } catch (error: any) {
+    console.error("❌ ОШИБКА API ОБНОВЛЕНИЯ ЗАДАЧИ:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+});
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized'}, {status: 401});
-        }
+export const DELETE = auth(async (req, { params }) => {
+  const userId = req.auth?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-        const body = await request.json();
-        const task = await taskService.update(body, session.user.id);
+  try {
+    const { id } = await (params as any);
 
-        return NextResponse.json(task)
+    await taskService.delete(id, userId);
 
-    } catch (error: any) {
-        console.error('Error updating task', error);
-
-        if (error.message.includes('Task not found')) {
-            return NextResponse.json({error: error.message}, {status: 404});
-        }
-
-        if (error.message.includes('Project not found')) {
-            return NextResponse.json({ error: error.message}, { status: 404});
-        }
-
-        return NextResponse.json(
-            {error: 'Internal server error'},
-            { status: 500}
-        )
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    console.error("❌ TASK_DELETE_ERROR:", error);
+    
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    
+    if (message.includes("not found")) {
+      return NextResponse.json({ error: message }, { status: 404 });
     }
-}
+
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+});

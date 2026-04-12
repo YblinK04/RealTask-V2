@@ -1,105 +1,94 @@
-import NextAuth, { NextAuthConfig, User, type DefaultSession } from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { prisma } from '@/lib/prisma';
-import { compare } from 'bcryptjs';
-import { LoginSchema } from '@/lib/schemas';
-import { JWT } from "next-auth/jwt";
+import NextAuth, { type NextAuthConfig } from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
+import { prisma } from '@/lib/prisma'
+import { compare } from 'bcryptjs'
+import { LoginSchema } from '@/lib/schemas'
+import "next-auth/jwt"
 
+// 1. Расширение типов
 declare module "next-auth" {
-
   interface User {
-    id: string;
-    role: 'USER' | 'ADMIN';
+    id?: string // Сделал опциональным для совместимости
+    role?: 'USER' | 'ADMIN'
   }
-
- 
   interface Session {
     user: {
-      id: string;
-      role: 'USER' | 'ADMIN';
-    } & DefaultSession["user"];
+      id: string
+      role: 'USER' | 'ADMIN'
+    } & import("next-auth").DefaultSession["user"]
   }
 }
 
 declare module "next-auth/jwt" {
-
   interface JWT {
-    id: string;
-    role: 'USER' | 'ADMIN';
+    id: string
+    role: 'USER' | 'ADMIN'
   }
 }
-    
+
+// 2. Конфигурация
 export const authConfig: NextAuthConfig = {
- providers: [
+  providers: [
     Credentials({
-        name: 'Credentials',
-        credentials: {
-            email: {label: 'Email', type: 'email'},
-            password: { label: 'Password', type: 'password'}
-        },
-        async authorize(credentials) {
-            try {
-                const validateFields = LoginSchema.safeParse(credentials);
+      async authorize(credentials) {
+        // Валидация полей через твою схему
+        const validatedFields = LoginSchema.safeParse(credentials);
 
-                if (!validateFields.success){
-                    return null
-                }
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data;
 
-                const {email, password} = validateFields.data;
+          const user = await prisma.user.findUnique({
+            where: { email }
+          });
 
-                const user = await prisma.user.findUnique({
-                    where: {email},
-                });
+          // Проверка пароля
+          if (!user || !user.password) return null;
 
-                if (!user || !user.password) {
-                    return null
-                }
+          const passwordsMatch = await compare(password, user.password);
 
-                const passwordMatch = await compare(password, user.password);
-
-                if (!passwordMatch) {
-                    return null
-                }
-
-                return {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role,
-                    image: user.image,
-                } as User
-            } catch (error) {
-                console.error('Auth Error', error)
-                return null
-            }
-        },
+          if (passwordsMatch) {
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role as 'USER' | 'ADMIN',
+            };
+          }
+        }
+        return null;
+      },
     }),
- ],
- callbacks: {
-    async jwt({token, user}) {
-        if (user) {
-            token.id = user.id;
-            token.role = user.role;
-        }
-        return token
+  ],
+  callbacks: {
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id as string
+        token.role = user.role as 'USER' | 'ADMIN'
+        token.name = user.name
+      }
+      // Обработка обновления профиля через update()
+      if (trigger === "update" && session?.name) {
+        token.name = session.name
+      }
+      return token
     },
-    async session({session, token}) {
-        if (session.user) {
-            session.user.id = token.id;
-            session. user.role = token.role 
-        }
-        return session
-   },
- },
- pages: {
-    signIn: '/auth/login',
-    error: '/auth/error'
- },
- session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60
- },
- secret: process.env.NEXTAUTH_SECRET
-};
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id
+        session.user.role = token.role
+        session.user.name = token.name as string
+      }
+      return session
+    }
+  },
+  pages: {
+    signIn: '/login',
+    error: '/error'
+  },
+  session: {
+    strategy: 'jwt'
+  },
+  secret: process.env.NEXTAUTH_SECRET
+}
 
-export const {handlers, auth, signIn, signOut} = NextAuth(authConfig)
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

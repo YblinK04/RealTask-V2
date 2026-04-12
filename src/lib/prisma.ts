@@ -1,31 +1,32 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
-import { PrismaClient } from '@prisma/client';
-import ws from 'ws';
+import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
-if (typeof window === 'undefined') {
+// Настройка для серверной среды (Node.js/Edge)
+if (typeof window === "undefined") {
   neonConfig.webSocketConstructor = ws;
 }
 
+// ВАЖНО: Мы используем обычный DATABASE_URL. 
+// Он будет доступен в API-роутах и Server Components, но не попадет в браузер.
 const connectionString = process.env.DATABASE_URL;
 
-const prismaClientSingleton = () => {
-  if (!connectionString) {
-    throw new Error("❌ DATABASE_URL is missing!");
-  }
+if (!connectionString) {
+  // Эта ошибка вылетит только в терминале сервера, пользователь её не увидит.
+  throw new Error("❌ DATABASE_URL missing. Проверьте .env файл в корне проекта.");
+}
 
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaNeon(pool as any);
-  
-  // Явно указываем URL, чтобы Prisma не гадала
-  return new PrismaClient({ adapter });
-};
+// Создаем адаптер напрямую (решение, которое мы нашли ранее)
+const adapter = new PrismaNeon({ connectionString });
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+// Singleton паттерн для Next.js (предотвращает утечку соединений при Hot Reload)
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-// Экспортируем константу prisma
-export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+export const prisma = 
+  globalForPrisma.prisma || 
+  new PrismaClient({ 
+    adapter: adapter as any 
+  });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

@@ -1,6 +1,6 @@
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
 
-// базовый запрос
+
 
 async function throwOfResNotOk(res: Response) {
     if (!res.ok) {
@@ -49,7 +49,7 @@ export const queryClient = new QueryClient({
             },
              refetchOnWindowFocus: process.env.NODE_ENV === 'production',
              retry: (failureCount, error: any) => {
-                // запрос не повторится при 404 или 403
+              
                 if (error?.message?.includes('404') || error?.message?.includes('403')) {
                     return false
                 }
@@ -62,7 +62,7 @@ export const queryClient = new QueryClient({
     }
 });
 
-// Вспомогательные функции для запросов
+
 export const api = {
   get: <T>(url: string) => customFetch<T>({ url, method: 'GET' }),
   post: <T>(url: string, body?: any) => customFetch<T>({ url, method: 'POST', body }),

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// базовые схемы для валидации 
+
 
 export const UserSchema =  z.object({
-    id: z.string().cuid(), // поле будет строкой  и оно защищено от подделки id и коллизий
-    email: z.string().email(),
+    id: z.string().cuid(), 
+    email: z.string().trim().toLowerCase().email("Неверный формат почты"),
     name: z.string().min(2).max(50).optional(),
     role: z.enum(["USER", "ADMIN"]),
     image: z.string().url().optional().nullable(),
@@ -18,31 +18,34 @@ export const CreatedUserSchema = UserSchema.pick({
     role: true,
     image: true,
 }).extend({
+    email: z.string().trim().toLowerCase().email("Введите корректный email"),
     password: z.string().min(8),
 });
 
 export const LoginSchema = z.object({
-    email: z.string().email(),
+    email: z.string().trim().toLowerCase().email("Неверный формат почты"),
     password: z.string().min(1, 'Passwword is required'),
 });
 
 export const ProjectSchema = z.object({
-    id: z.string().cuid(),
-    name: z.string().min(1, 'Name is required').max(100),
-    description: z.string().max(500).optional(),
-    color: z.string().regex(/^#[0-9A-F]{6}$/i).default('#3b82f6'),
-    isPublic: z.boolean().default(false),
-    ownerId: z.string(),
-    createdAt: z.date(),
-    updatedAt: z.date()
+  id: z.string().cuid(),
+  name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().max(500).optional(),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i).default('#3b82f6'),
+  isPublic: z.boolean().default(false),
+  ownerId: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date()
 });
 
+export const ProjectStatusSchema = z.enum(['ACTIVE', 'COMPLETED', 'ARCHIVED']);
 export const CreateProjectSchema = z.object({
   
   name: z.string().min(1, 'Название обязательно').max(100),
   description: z.string().max(500), 
   color: z.string().regex(/^#[0-9A-F]{6}$/i),
   isPublic: z.boolean(),
+    status: ProjectStatusSchema.optional().default('ACTIVE'),
 });
 
 export const UpdateProjectSchema = CreateProjectSchema.partial();
@@ -52,28 +55,26 @@ export const TaskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
 export const TaskSchema = z.object({
   id: z.string().cuid(),
-  title: z.string().min(1, 'Title is required').max(200),
-  description: z.string().max(1000).optional(),
+  title: z.string().min(1, 'Название обязательно').max(200),
+  description: z.string().max(1000).optional().nullable(),
   status: TaskStatusSchema,
   priority: TaskPrioritySchema,
-  order: z.number().int(),
-  dueDate: z.date().optional().nullable(),
+  order: z.number().int().default(0),
+  dueDate: z.coerce.date().optional().nullable(),
   projectId: z.string(),
   assigneeId: z.string().optional().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
 });
 
-export const CreateTaskSchema = TaskSchema.pick({
-  title: true,
-  description: true,
-  status: true,
-  priority: true,
-  dueDate: true,
-  projectId: true,
-  assigneeId: true,
-}).extend({
-  order: z.number().int().optional(),
+export const CreateTaskSchema = z.object({
+  title: z.string().min(1, 'Название обязательно'),
+  description: z.string().optional().nullable(),
+  status: TaskStatusSchema.default('TODO'),
+  priority: TaskPrioritySchema.default('MEDIUM'),
+  projectId: z.string(),
+  order: z.number().int().optional().default(0),
+  dueDate: z.coerce.date().optional().nullable(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
@@ -107,8 +108,11 @@ export const ProjectResponseSchema = z.object({
   name: z.string(),
   
 });
+export const UpdateProfileSchema = z.object({
+  name: z.string().min(2, "Имя слишком короткое").max(50, "Имя слишком длинное"),
+});
 
-// Типы TypeScript из схем
+
 export type User = z.infer<typeof UserSchema>;
 export type CreateUserInput = z.infer<typeof CreatedUserSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
@@ -122,3 +126,5 @@ export type MoveTaskInput = z.infer<typeof MoveTaskSchema>;
 export type Comment = z.infer<typeof CommentSchema>;
 export type CreateCommentInput = z.infer<typeof CreateCommentSchema>;
 export type ProjectResponse = z.infer<typeof ProjectResponseSchema>;
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+export type TaskStatus = z.infer<typeof TaskStatusSchema>;

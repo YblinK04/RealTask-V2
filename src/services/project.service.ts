@@ -21,12 +21,12 @@ export class ProjectService {
         return project
     }
 
-    // обновляем проект 
+   
 
     async update(projectId: string, data: UpdateProjectInput, userId:string): Promise<Project> {
         const validateData = UpdateProjectSchema.parse(data);
 
-        // проверяем права владельца
+        
         await this.validateOwnership(projectId, userId);
 
         const project = await prisma.project.update({
@@ -36,14 +36,13 @@ export class ProjectService {
         return project
     }
 
-    // Удаление 
+   
 
     async delete(projectId: string, userId: string): Promise<Project> {
         await this.validateOwnership(projectId, userId);
 
-        // Удаляем задачи и комментарии 
        const deleteProject = await prisma.$transaction(async (tx) => {
-            // удаляем комменты задач проекта
+           
             await tx.comment.deleteMany({
                 where: {
                     task: {
@@ -51,12 +50,12 @@ export class ProjectService {
                     },
                 },
             });
-            // удаляем задачи проекта
+         
             await tx.task.deleteMany({
                 where: { projectId},
             });
 
-            // удаляем проект
+         
             return await tx.project.delete({
                 where: {id: projectId},
             });
@@ -65,7 +64,7 @@ export class ProjectService {
         return deleteProject
     }
 
-   // Получение проекта с задачами
+ 
   async getWithTasks(projectId: string, userId: string) {
     const project = await prisma.project.findFirst({
       where: {
@@ -111,30 +110,26 @@ export class ProjectService {
   }
 
  async getUserProjects(userId: string, includePublic: boolean = false) {
-    const whereClause: any = {
-      OR: [{ ownerId: userId }],
-    };
+  const whereClause: any = {
+    OR: [{ ownerId: userId }],
+  };
 
-    if (includePublic) {
-      whereClause.OR.push({ isPublic: true });
-    }
-
-    const projects = await prisma.project.findMany({
-      where: whereClause,
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
-      },
-    });
-
-    return projects;
+  if (includePublic) {
+    whereClause.OR.push({ isPublic: true });
   }
 
-  // Валидация прав владельца
+  const projects = await prisma.project.findMany({
+    where: whereClause,
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      tasks: true, 
+    },
+  });
+
+  return projects;
+}
+
+
   private async validateOwnership(projectId: string, userId: string) {
     const project = await prisma.project.findFirst({
       where: {

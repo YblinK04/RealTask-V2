@@ -5,7 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// форматирование даты 
 export function formatDate(date: Date | string): string {
   const d = new Date(date);
   return new Intl.DateTimeFormat('ru-RU', {
@@ -15,7 +14,7 @@ export function formatDate(date: Date | string): string {
   }).format(d)
 }
 
-// Форматирование относительного времени 
+
 export function formatRelativeTime(date: Date | string): string {
    const d = new Date(date);
   const now = new Date();
@@ -36,7 +35,6 @@ export function formatRelativeTime(date: Date | string): string {
   return formatDate(d);
 }
 
-// генерация рандом цвета 
 
 export function getRandomColor(): string {
   const colors = [
@@ -51,29 +49,29 @@ export function getRandomColor(): string {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// обрезка текста
+
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 }
 
-// определение приоритета
+
 export function getPriorityColor(priority: string): string {
   switch (priority) {
     case 'URGENT':
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-600 text-white border-red-700';
     case 'HIGH':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
+      return 'bg-orange-500 text-white border-orange-600'; 
     case 'MEDIUM':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      return 'bg-yellow-500 text-white border-yellow-600'; 
     case 'LOW':
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-blue-500 text-white border-blue-600'; 
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-500 text-white border-gray-600';
   }
 }
 
-// определение статуса
+
 export function getStatusColor(status: string): string {
   switch (status) {
     case 'TODO':

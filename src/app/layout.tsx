@@ -8,7 +8,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'TaskFlow Pro',
+  title: 'RealTask',
   description: 'Professional Task Management System',
 };
 
