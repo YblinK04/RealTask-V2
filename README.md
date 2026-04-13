@@ -11,6 +11,7 @@ RealTask — это современная Full-stack платформа для 
 - State Management: Zustand (Client State) + TanStack Query v5 (Server Cache).
 - UI & Styling: Tailwind CSS + Shadcn UI + Framer Motion.
 - Kanban Engine: @dnd-kit с поддержкой сенсорных устройств.
+- Uniti тесты с помощью Vitest
   💡
   Ключевые технические решения (Interview Highlights)
 
