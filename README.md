@@ -1,12 +1,12 @@
 🚀 RealTask
 **Live Demo:** [real-task-v2.vercel.app](https://real-task-v2.vercel.app/)
 
-RealTask — это современная Full-stack платформа для управления проектами и задачами, построенная на архитектуре Next.js 15. Проект ориентирован на высокую производительность, реактивный UI и надежность данных.
+RealTask - это современная Full-stack платформа для управления проектами и задачами, построенная на архитектуре Next.js 15. Проект ориентирован на высокую производительность, реактивный UI и надежность данных.
 
 🛠 Технологический стек
 
 - Framework: Next.js 15 (App Router) + React 19
-- Auth: Auth.js v5 (NextAuth) — кастомные сессии и JWT.
+- Auth: Auth.js v5 (NextAuth) - кастомные сессии и JWT.
 - Database: Neon DB (PostgreSQL) + Prisma ORM.
 - State Management: Zustand (Client State) + TanStack Query v5 (Server Cache).
 - UI & Styling: Tailwind CSS + Shadcn UI + Framer Motion.
