@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -7,13 +7,13 @@ generator client {
 datasource db {
   provider  = "postgresql"
   
-  extensions = [pg_trgm, pgcrypto] // Расширения для поиска и шифрования
+  extensions = [pg_trgm, pgcrypto] 
 }
 
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  password      String    // Хэшированный пароль
+  password      String    
   name          String?
   role          Role      @default(USER)
   image         String?
@@ -35,7 +35,7 @@ model Project {
   id          String   @id @default(cuid())
   name        String
   description String?
-  color       String   @default("#3b82f6") // Hex цвет для визуального отличия
+  color       String   @default("#3b82f6") 
   isPublic    Boolean  @default(false)
   status      ProjectStatus @default(ACTIVE)
   // Отношения
@@ -57,7 +57,7 @@ model Task {
   description String?
   status      Status   @default(TODO)
   priority    Priority @default(MEDIUM)
-  order       Int      @default(0) // Для сортировки в колонках
+  order       Int      @default(0) 
   
    
   dueDate     DateTime?
@@ -106,7 +106,7 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
-// Enums для типизации
+
 enum Role {
   USER
   ADMIN

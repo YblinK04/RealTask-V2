@@ -103,7 +103,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
@@ -115,7 +115,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
             />
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
@@ -135,7 +135,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
-                control={form.control as any}
+                control={form.control }
                 name="status"
                 render={({ field }) => (
                   <FormItem>
@@ -154,7 +154,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
               />
 
               <FormField
-                control={form.control as any}
+                control={form.control}
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
