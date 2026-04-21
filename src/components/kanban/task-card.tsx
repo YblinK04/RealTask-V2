@@ -4,15 +4,16 @@ import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/lib/schemas';
-import { cn, getPriorityColor, formatDate } from '@/lib/utils';
+import { cn, getPriorityColor } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import {  MessageSquare, MoreVertical, Trash, Edit, Clock } from 'lucide-react';
+import { MessageSquare, MoreVertical, Trash, Edit, Clock } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogDescription
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -63,6 +64,7 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
     <>
       <Dialog>
         <div ref={setNodeRef} style={style} className="relative group">
+          {/* Меню управления карточкой */}
           <div className="absolute right-2 top-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -98,7 +100,7 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
           <DialogTrigger asChild>
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
               <Card className={cn(
-                "relative py-3 mb-1 shadow-none border-none ring-1 ring-border/50 bg-card transition-all",
+                "relative py-3 mb-1 shadow-none border-none ring-1 ring-border/50 bg-card transition-all hover:ring-primary/30",
                 isOverlay && "ring-2 ring-primary shadow-2xl bg-card/95 backdrop-blur-sm"
               )}>
                 <CardHeader className="px-3 pb-2 pt-1">
@@ -120,9 +122,9 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
                       <Clock className="h-3 w-3" />
                       <span>{format(new Date(task.createdAt), 'dd.MM HH:mm', { locale: ru })}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-primary/50">
+                    <div className="flex items-center gap-1 text-primary/80">
                       <MessageSquare className="h-3 w-3" />
-                      <span>Чат</span>
+                      <span>Обсуждение</span>
                     </div>
                   </div>
                 </CardFooter>
@@ -131,7 +133,25 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
           </DialogTrigger>
         </div>
 
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 overflow-hidden">
+        {/* ИСПРАВЛЕННОЕ СОДЕРЖИМОЕ ДИАЛОГА */}
+        <DialogContent className="sm:max-w-[600px] h-[80vh] flex flex-col p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-6 border-b bg-muted/10">
+            <div className="flex items-center gap-2 mb-2">
+               <div className={cn("h-2 w-8 rounded-full", getPriorityColor(task.priority).split(' ')[0])} />
+               <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                 {task.priority} Priority
+               </span>
+            </div>
+            <DialogTitle className="text-xl font-bold">{task.title}</DialogTitle>
+            <DialogDescription className="text-xs">
+              Создано {format(new Date(task.createdAt), 'PPPP', { locale: ru })}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Область комментариев/чата */}
+          <div className="flex-1 overflow-hidden p-6">
+            <TaskComments taskId={task.id} />
+          </div>
         </DialogContent>
       </Dialog>
 
