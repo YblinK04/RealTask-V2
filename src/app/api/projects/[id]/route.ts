@@ -2,12 +2,19 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export const DELETE = auth(async (req, { params }) => {
+type DeleteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export const DELETE = auth(async (req, ctx) => {
   const userId = req.auth?.user?.id;
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
-    const { id: projectId } = await (params as any);
+    const { id: projectId } = await ctx.params;
 
     await prisma.$transaction(async (tx) => {
       const project = await tx.project.findFirst({
@@ -16,6 +23,7 @@ export const DELETE = auth(async (req, { params }) => {
 
       if (!project) throw new Error("Access denied");
 
+      
       await tx.project.delete({ where: { id: projectId } });
 
       await tx.notification.create({
@@ -28,7 +36,10 @@ export const DELETE = auth(async (req, { params }) => {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) { 
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
   }
 });

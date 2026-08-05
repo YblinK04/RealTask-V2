@@ -33,35 +33,35 @@ export async function customFetch<T>({
     return res.json()
 }
 
-export const queryClient = new QueryClient({
+export function createQueryClient() {
+  return new QueryClient({
     defaultOptions: {
         queries: {
             queryFn: async ({queryKey}) => {
                 const res = await fetch(queryKey[0] as string, {
                     credentials: 'include',
                 });
-
                 if (!res.ok) {
                     throw new Error(`Network response was not ok (${res.status})`)
                 }
-
                 return res.json()
             },
-             refetchOnWindowFocus: process.env.NODE_ENV === 'production',
-             retry: (failureCount, error: any) => {
-              
-                if (error?.message?.includes('404') || error?.message?.includes('403')) {
-                    return false
+            refetchOnWindowFocus: process.env.NODE_ENV === 'production',
+            retry: (failureCount, error: unknown) => { 
+                if (error instanceof Error) {
+                    if (error.message.includes('404') || error.message.includes('403')) {
+                        return false
+                    }
                 }
                 return failureCount < 3
-             },
+            },
         },
         mutations: {
             retry: false
         }
     }
-});
-
+  });
+}
 
 export const api = {
   get: <T>(url: string) => customFetch<T>({ url, method: 'GET' }),

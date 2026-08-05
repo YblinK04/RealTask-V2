@@ -64,7 +64,6 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
     <>
       <Dialog>
         <div ref={setNodeRef} style={style} className="relative group">
-          {/* Меню управления карточкой */}
           <div className="absolute right-2 top-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -133,7 +132,6 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
           </DialogTrigger>
         </div>
 
-        {/* ИСПРАВЛЕННОЕ СОДЕРЖИМОЕ ДИАЛОГА */}
         <DialogContent className="sm:max-w-[600px] h-[80vh] flex flex-col p-0 overflow-hidden bg-background">
           <DialogHeader className="p-6 border-b bg-muted/10">
             <div className="flex items-center gap-2 mb-2">
@@ -148,7 +146,6 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Область комментариев/чата */}
           <div className="flex-1 overflow-hidden p-6">
             <TaskComments taskId={task.id} />
           </div>
