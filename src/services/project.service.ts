@@ -109,24 +109,18 @@ export class ProjectService {
     return project;
   }
 
- async getUserProjects(userId: string, includePublic: boolean = false) {
-  const whereClause: any = {
-    OR: [{ ownerId: userId }],
-  };
-
-  if (includePublic) {
-    whereClause.OR.push({ isPublic: true });
+  async getUserProjects(userId: string) {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    console.warn("⚠️ Предупреждение: Предотвращен падение findMany. userId пуст.");
+    return []; 
   }
 
-  const projects = await prisma.project.findMany({
-    where: whereClause,
-    orderBy: { updatedAt: 'desc' },
-    include: {
-      tasks: true, 
+  return await prisma.project.findMany({
+    where: {
+      ownerId: userId 
     },
+    orderBy: { updatedAt: 'desc' },
   });
-
-  return projects;
 }
 
 

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Task } from '@prisma/client';
+import { Task, Project } from '@prisma/client';
 import {
   CreateTaskSchema,
   UpdateTaskSchema,
@@ -12,13 +12,9 @@ import {
 export class TaskService {
   
   async create(data: CreateTaskInput, userId: string): Promise<Task> {
-   
     const validateData = CreateTaskSchema.parse(data);
-
-    
     await this.validateProjectAccess(validateData.projectId, userId);
 
-   
     let order = validateData.order;
     if (order === undefined || order === null) {
       const lastTask = await prisma.task.findFirst({
@@ -31,20 +27,18 @@ export class TaskService {
       order = lastTask ? lastTask.order + 1 : 0;
     }
 
-    
     return await prisma.task.create({
       data: {
         title: validateData.title,
         description: validateData.description || null,
         status: validateData.status || 'TODO',
         priority: validateData.priority || 'MEDIUM',
-        order: order,
+        order, 
         projectId: validateData.projectId,
         dueDate: validateData.dueDate || null,
       },
     });
   }
-
 
   async update(data: UpdateTaskInput, userId: string): Promise<Task> {
     const validateData = UpdateTaskSchema.parse(data);
@@ -65,9 +59,8 @@ export class TaskService {
       },
     });
   }
-
  
-  async move(data: MoveTaskInput, userId: string): Promise<Task> {
+  async move(data: unknown, userId: string): Promise<Task> {
     const validatedData = MoveTaskSchema.parse(data);
 
     return await prisma.$transaction(async (tx) => {
@@ -76,18 +69,14 @@ export class TaskService {
       });
 
       if (!task) throw new Error('Task not found');
-
-     
       await this.validateProjectAccess(validatedData.projectId || task.projectId, userId);
 
       const oldStatus = task.status;
       const newStatus = validatedData.newStatus;
       const oldOrder = task.order;
       const newOrder = validatedData.newOrder;
-
       
       if (oldStatus !== newStatus) {
-        
         await tx.task.updateMany({
           where: {
             status: oldStatus,
@@ -97,7 +86,6 @@ export class TaskService {
           data: { order: { decrement: 1 } },
         });
 
-        
         await tx.task.updateMany({
           where: {
             status: newStatus,
@@ -107,7 +95,6 @@ export class TaskService {
           data: { order: { increment: 1 } },
         });
       } else if (oldOrder !== newOrder) {
-        
         if (newOrder > oldOrder) {
           await tx.task.updateMany({
             where: {
@@ -140,44 +127,35 @@ export class TaskService {
     });
   }
 
-
   async delete(taskId: string, userId: string): Promise<Task> {
-  const task = await prisma.task.findUnique({
-    where: { id: taskId },
-  });
-
-  if (!task) {
-    throw new Error('Task not found');
-  }
-  await this.validateProjectAccess(task.projectId, userId);
-
-  return await prisma.$transaction(async (tx) => {
-    
-    await tx.comment.deleteMany({
-      where: { taskId: taskId },
-    });
-
-    
-    await tx.task.updateMany({
-      where: {
-        projectId: task.projectId,
-        status: task.status,
-        order: { gt: task.order },
-      },
-      data: {
-        order: { decrement: 1 },
-      },
-    });
-
-   
-    return await tx.task.delete({
+    const task = await prisma.task.findUnique({
       where: { id: taskId },
     });
-  });
-}
 
+    if (!task) throw new Error('Task not found');
+    await this.validateProjectAccess(task.projectId, userId);
 
-  async getProjectTasks(projectId: string, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      await tx.comment.deleteMany({
+        where: { taskId },
+      });
+
+      await tx.task.updateMany({
+        where: {
+          projectId: task.projectId,
+          status: task.status,
+          order: { gt: task.order },
+        },
+        data: { order: { decrement: 1 } },
+      });
+
+      return await tx.task.delete({
+        where: { id: taskId },
+      });
+    });
+  }
+
+  async getProjectTasks(projectId: string, userId: string): Promise<Task[]> {
     await this.validateProjectAccess(projectId, userId);
 
     return await prisma.task.findMany({
@@ -191,8 +169,7 @@ export class TaskService {
     });
   }
 
-
-  private async validateProjectAccess(projectId: string, userId: string) {
+  private async validateProjectAccess(projectId: string, userId: string): Promise<Project> {
     const project = await prisma.project.findFirst({
       where: {
         id: projectId,

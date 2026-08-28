@@ -3,38 +3,16 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
-import { api } from '@/lib/react-query';
-import { CreateTaskSchema, type CreateTaskInput, type Task } from '@/lib/schemas';
-import { useTaskStore } from '@/store/useTaskStore';
+import { UpdateTaskSchema, type UpdateTaskInput, type Task } from '@/lib/schemas';
+import { useUpdateTaskMutation } from '@/store/useTaskMutation';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
 interface EditTaskDialogProps {
@@ -44,24 +22,24 @@ interface EditTaskDialogProps {
 }
 
 export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps) {
-  const queryClient = useQueryClient();
-  const updateTaskInZustand = useTaskStore((state) => state.updateTask);
-
-  const form = useForm<CreateTaskInput>({
-    resolver: zodResolver(CreateTaskSchema) as any,
-    defaultValues: {
-      title: task.title,
-      description: task.description || '',
-      status: task.status,
-      priority: task.priority,
-      projectId: task.projectId,
-      order: task.order,
-    },
+  
+  const form = useForm({
+  resolver: zodResolver(UpdateTaskSchema),
+  defaultValues: {
+    id: task.id,
+    title: task.title,
+    description: task.description || '',
+    status: task.status,
+    priority: task.priority,
+    projectId: task.projectId,
+    order: task.order,
+  } as UpdateTaskInput
   });
 
   useEffect(() => {
     if (open) {
       form.reset({
+        id: task.id,
         title: task.title,
         description: task.description || '',
         status: task.status,
@@ -72,25 +50,19 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
     }
   }, [open, task, form]);
 
-  const { mutate: sendUpdate, isPending } = useMutation({
-    mutationFn: (data: CreateTaskInput) => 
-      api.patch(`/api/tasks`, { id: task.id, ...data }),
-    onSuccess: (updatedTaskFromServer: any) => {
-      updateTaskInZustand(task.id, updatedTaskFromServer);
-      
-      queryClient.invalidateQueries({ queryKey: ['tasks', task.projectId] });
-      
-      toast.success('Задача обновлена');
-      onOpenChange(false);
-    },
-    onError: (error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Ошибка обновления';
-      toast.error(message);
-    }
-  });
+  const { mutate: sendUpdate, isPending } = useUpdateTaskMutation(() => onOpenChange(false));
 
-  const onSubmit = (values: CreateTaskInput) => {
-    sendUpdate(values);
+  const onSubmit = (values: UpdateTaskInput) => {
+    const payload: UpdateTaskInput = {
+      ...values,
+      ...(values.status !== task.status ? {
+        taskId: task.id,
+        newStatus: values.status,
+        newOrder: 0,
+      } : {})
+    };
+    
+    sendUpdate(payload);
   };
 
   return (
@@ -121,12 +93,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 <FormItem>
                   <FormLabel className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-widest">Описание</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      {...field} 
-                      value={field.value || ''} 
-                      className="resize-none h-32 bg-muted/30 border-none" 
-                      disabled={isPending} 
-                    />
+                    <Textarea {...field} value={field.value || ''} className="resize-none h-32 bg-muted/30 border-none" disabled={isPending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -135,7 +102,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
-                control={form.control }
+                control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
@@ -174,12 +141,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
             </div>
 
             <DialogFooter className="pt-6">
-              <Button 
-                type="button" 
-                variant="ghost" 
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
-              >
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
                 Отмена
               </Button>
               <Button type="submit" disabled={isPending} className="min-w-[120px]">

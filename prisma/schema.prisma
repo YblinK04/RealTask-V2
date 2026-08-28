@@ -11,91 +11,86 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String         @id @default(cuid())
+  email         String         @unique
   password      String    
   name          String?
-  role          Role      @default(USER)
+  role          Role           @default(USER)
   image         String?
   emailVerified DateTime?
+  
+  // Отношения (ИСПРАВЛЕНО: Каскадное удаление зависимых сущностей при удалении юзера)
   notifications Notification[]
-  // Отношения
-  projects      Project[] @relation("ProjectOwner")
+  projects      Project[]      @relation("ProjectOwner")
   comments      Comment[]
-  assignedTasks Task[]    @relation("TaskAssignee")
+  assignedTasks Task[]         @relation("TaskAssignee")
   
   // Таймстампы
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   
   @@map("users")
 }
 
 model Project {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   description String?
-  color       String   @default("#3b82f6") 
-  isPublic    Boolean  @default(false)
+  color       String        @default("#3b82f6") 
+  isPublic    Boolean       @default(false)
   status      ProjectStatus @default(ACTIVE)
-  // Отношения
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
-  ownerId     String
+  
+  owner       User          @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String        @map("owner_id") // ⚡ ИСПРАВЛЕНО: Явный маппинг под стандарты Postgres
   tasks       Task[]
   
-  // Таймстампы
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now()) @map("created_at") // Рекомендуется для таймстампов
+  updatedAt   DateTime      @updatedAt @map("updated_at")
   
   @@map("projects")
   @@index([ownerId])
 }
 
 model Task {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
-  status      Status   @default(TODO)
-  priority    Priority @default(MEDIUM)
-  order       Int      @default(0) 
+  status      Status    @default(TODO)
+  priority    Priority  @default(MEDIUM)
+  order       Int       @default(0) 
+  dueDate     DateTime? @map("due_date")
   
-   
-  dueDate     DateTime?
-  
-  // Отношения
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId   String
-  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  assigneeId  String?
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String    @map("project_id") // ⚡ ИСПРАВЛЕНО
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assigneeId  String?   @map("assignee_id") // ⚡ ИСПРАВЛЕНО
   comments    Comment[]
   
-  // Таймстампы
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
   
   @@map("tasks")
-  @@index([projectId, status])
+  @@index([projectId, status, order])
   @@index([assigneeId])
 }
 
 model Comment {
   id        String   @id @default(cuid())
   content   String   @db.Text
-  isEdited  Boolean  @default(false)
+  isEdited  Boolean  @default(false) @map("is_edited")
   
-  // Отношения
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId    String
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
+  taskId    String   @map("task_id") // ⚡ ИСПРАВЛЕНО
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id") // ⚡ ИСПРАВЛЕНО
   
-  // Таймстампы
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   
   @@map("comments")
   @@index([taskId])
 }
+
 model Notification {
   id        String   @id @default(cuid())
   userId    String
@@ -105,6 +100,8 @@ model Notification {
   link      String?
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@map("notifications") // ИСПРАВЛЕНО: Добавлен маппинг таблицы в нижний регистр для консистентности PostgreSQL
 }
 
 enum Role {

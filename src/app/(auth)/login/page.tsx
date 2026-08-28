@@ -11,38 +11,45 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react'; 
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false); 
     const router = useRouter();
 
-    const form = useForm<LoginInput>({
-        resolver: zodResolver(LoginSchema),
-        defaultValues: { email: '', password: '' }
-    });
+  const form = useForm({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { 
+        email: '', 
+        password: '',
+        rememberMe: false 
+    }
+});
 
     const onSubmit = async (data: LoginInput) => {
         setIsLoading(true);
-
         try {
             const result = await signIn('credentials', {
                 email: data.email,
                 password: data.password,
+                rememberMe: data.rememberMe, 
                 redirect: false,
             });
 
             if (result?.error) {
                 toast.error('Неверный логин или пароль');
-                setIsLoading(false); 
                 return;
             }
 
             toast.success('Успешный вход');
             router.push('/dashboard');
             router.refresh();
-        } catch (error) {
+        } catch (error: unknown) { 
+            console.error('LOGIN_ERROR:', error);
             toast.error('Произошла ошибка при входе');
-            setIsLoading(false);
+        } finally {
+            setIsLoading(false); 
         }
     };
 
@@ -69,20 +76,51 @@ export default function LoginPage() {
                                 </p>
                             )}
                         </div>
+
                         <div className="space-y-2">
-                            <Input 
-                                {...form.register('password')} 
-                                type="password" 
-                                placeholder="••••••••" 
-                                disabled={isLoading}
-                                className="bg-background"
-                            />
+                            <div className="relative">
+                                <Input 
+                                    {...form.register('password')} 
+                                    type={showPassword ? 'text' : 'password'} 
+                                    placeholder="••••••••" 
+                                    disabled={isLoading}
+                                    className="bg-background pr-10" 
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    tabIndex={-1}
+                                    disabled={isLoading}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
                             {form.formState.errors.password && (
                                 <p className="text-[10px] font-bold text-red-500 uppercase">
                                     {form.formState.errors.password.message}
                                 </p>
                             )}
                         </div>
+
+                        <div className="flex items-center space-x-2 py-1">
+                            <input
+                                {...form.register('rememberMe')}
+                                type="checkbox"
+                                id="rememberMe"
+                                disabled={isLoading}
+                                className="h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring accent-primary cursor-pointer disabled:opacity-50"
+                            />
+                            <label
+                                htmlFor="rememberMe"
+                                className="text-xs font-bold uppercase tracking-tight text-muted-foreground cursor-pointer select-none"
+                            >
+                                Запомнить меня
+                            </label>
+                        </div>
+
                         <Button type="submit" className="w-full font-bold uppercase text-xs tracking-widest" disabled={isLoading}>
                             {isLoading ? 'Вход...' : 'Войти'}
                         </Button>

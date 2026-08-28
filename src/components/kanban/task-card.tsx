@@ -35,7 +35,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
-  const { deleteTask } = useTaskStore();
+  const { deleteTaskServer } = useTaskStore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); 
   
   const {
@@ -60,11 +60,18 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
     touchAction: 'none',
   };
 
+  const parsedDate = task.createdAt ? new Date(task.createdAt) : new Date();
+
   return (
     <>
       <Dialog>
         <div ref={setNodeRef} style={style} className="relative group">
-          <div className="absolute right-2 top-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          
+          <div 
+            className="absolute right-2 top-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity"
+            onPointerDown={(e) => e.stopPropagation()} 
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 bg-background/50">
@@ -86,7 +93,9 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
                   className="text-red-600 cursor-pointer" 
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm('Удалить задачу?')) deleteTask(task.id);
+                    if (confirm('Удалить задачу?')) {
+                      deleteTaskServer(task.id);
+                    }
                   }}
                 >
                   <Trash className="mr-2 h-4 w-4" />
@@ -119,7 +128,7 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
                   <div className="flex items-center justify-between w-full text-[9px] text-muted-foreground/60 font-bold uppercase tracking-widest">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      <span>{format(new Date(task.createdAt), 'dd.MM HH:mm', { locale: ru })}</span>
+                      <span>{format(parsedDate, 'dd.MM HH:mm', { locale: ru })}</span>
                     </div>
                     <div className="flex items-center gap-1 text-primary/80">
                       <MessageSquare className="h-3 w-3" />
@@ -142,7 +151,7 @@ export function TaskCard({ task, isOverlay, projectId }: TaskCardProps) {
             </div>
             <DialogTitle className="text-xl font-bold">{task.title}</DialogTitle>
             <DialogDescription className="text-xs">
-              Создано {format(new Date(task.createdAt), 'PPPP', { locale: ru })}
+              Создано {format(parsedDate, 'PPPP', { locale: ru })}
             </DialogDescription>
           </DialogHeader>
 

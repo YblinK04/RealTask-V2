@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import { CreatedUserSchema, type CreateUserInput } from '@/lib/schemas';
 import { api } from '@/lib/react-query';
+import { HttpError } from '@/lib/react-query'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,10 +23,17 @@ import {
   CardFooter 
 } from '@/components/ui/card';
 
+interface ApiValidationError {
+  error: string;
+  details?: Record<string, string[]>;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); 
 
   const form = useForm<CreateUserInput>({
     resolver: zodResolver(CreatedUserSchema),
@@ -33,7 +41,7 @@ export default function RegisterPage() {
       name: '',
       email: '',
       password: '',
-      role: 'USER',
+      confirmPassword: '', 
     },
   });
 
@@ -42,22 +50,45 @@ export default function RegisterPage() {
   const onSubmit = async (data: CreateUserInput) => {
     setIsLoading(true);
     try {
-     
       await api.post('/api/register', data);  
       
       toast.success('Аккаунт успешно создан!', {
         description: 'Теперь вы можете войти в систему.',
       });
       
-      
       router.push('/login');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ошибка при регистрации';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
+  console.error('REGISTER_SUBMIT_ERROR:', error);
+  
+  if (error instanceof HttpError) {
+    try {
+      const serverError = JSON.parse(error.message) as ApiValidationError;
+      
+      if (serverError.details) {
+        Object.entries(serverError.details).forEach(([key, messages]) => {
+          if (Array.isArray(messages) && messages[0]) {
+            form.setError(key as keyof CreateUserInput, {
+              type: 'server',
+              message: messages[0], 
+            });
+          }
+        });
+        toast.error('Проверьте правильность заполнения полей');
+        return;
+      }
+      
+      toast.error(serverError.error || 'Ошибка при регистрации');
+      return;
+    } catch {
+      toast.error(error.message);
+      return;
     }
-  };
+  }
+
+  const message = error instanceof Error ? error.message : 'Ошибка при регистрации';
+  toast.error(message);
+}
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center px-4 bg-muted/20">
@@ -65,12 +96,13 @@ export default function RegisterPage() {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">Создать аккаунт</CardTitle>
           <CardDescription>
-            Заполните данные, чтобы начать работу в Taskflow Pro
+            Заполните данные, чтобы начать работу в RealTask
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
            
+            {/* Ваше имя */}
             <div className="space-y-2">
               <Label htmlFor="name">Ваше имя</Label>
               <Input
@@ -85,7 +117,7 @@ export default function RegisterPage() {
               )}
             </div>
 
-           
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -102,7 +134,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-           
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
               <div className="relative">
@@ -123,19 +154,43 @@ export default function RegisterPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
+                  disabled={isLoading}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <Eye className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  <span className="sr-only">
-                    {showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                  </span>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
               {errors.password && (
                 <p role="alert" className="text-xs text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <div className="relative">
+                <Input
+                  {...form.register('confirmPassword')}
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                  autoComplete="new-password"
+                  className="pr-10"
+                  aria-invalid={!!errors.confirmPassword}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-muted-foreground"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {errors.confirmPassword && (
+                <p role="alert" className="text-xs text-destructive">{errors.confirmPassword.message}</p>
               )}
             </div>
 

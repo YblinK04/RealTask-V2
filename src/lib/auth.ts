@@ -5,7 +5,6 @@ import { compare } from 'bcryptjs'
 import { LoginSchema } from '@/lib/schemas'
 import "next-auth/jwt"
 
-
 declare module "next-auth" {
   interface User {
     id?: string 
@@ -30,29 +29,41 @@ export const authConfig: NextAuthConfig = {
   providers: [
     Credentials({
       async authorize(credentials) {
+        
+
         const validatedFields = LoginSchema.safeParse(credentials);
 
-        if (validatedFields.success) {
-          const { email, password } = validatedFields.data;
-
-          const user = await prisma.user.findUnique({
-            where: { email }
-          });
-
-          if (!user || !user.password) return null;
-
-          const passwordsMatch = await compare(password, user.password);
-
-          if (passwordsMatch) {
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role as 'USER' | 'ADMIN',
-            };
-          }
+        if (!validatedFields.success) {
+          console.error("❌ ОШИБКА ВАЛИДАЦИИ ZOD В NEXTAUTH:", validatedFields.error.flatten());
+          return null;
         }
-        return null;
+
+        const { email, password } = validatedFields.data;
+
+        const user = await prisma.user.findUnique({
+          where: { email }
+        });
+
+        if (!user || !user.password) {
+          console.error("❌ ПОЛЬЗОВАТЕЛЬ НЕ НАЙДЕН В БД");
+          return null;
+        }
+
+        const passwordsMatch = await compare(password, user.password);
+
+        if (!passwordsMatch) {
+          console.error("❌ ПАРОЛИ НЕ СОВПАЛИ");
+          return null;
+        }
+
+        console.log("✅ УСПЕШНАЯ АВТОРИЗАЦИЯ:", user.email);
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as 'USER' | 'ADMIN',
+          rememberMe: validatedFields.data.rememberMe,
+        };
       },
     }),
   ],
@@ -64,8 +75,9 @@ export const authConfig: NextAuthConfig = {
         token.name = user.name
       }
 
-      if (trigger === "update" && session?.name) {
-        token.name = session.name
+      const currentSession = session as Record<string, unknown> | null | undefined;
+      if (trigger === "update" && currentSession?.name) {
+        token.name = currentSession.name as string;
       }
       return token
     },
@@ -82,9 +94,26 @@ export const authConfig: NextAuthConfig = {
     signIn: '/login',
     error: '/error'
   },
+  
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, 
+    updateAge: 24 * 60 * 60,   
   },
+
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, 
+      },
+    },
+  },
+  
   secret: process.env.NEXTAUTH_SECRET
 }
 
